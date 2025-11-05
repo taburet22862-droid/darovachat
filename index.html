@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarovaChat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #36393f;
+            color: #dcddde;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #2c2f33 0%, #23272a 100%);
+        }
+
+        .login-box {
+            background-color: #2c2f33;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h1 {
+            color: #7289da;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-align: center;
+        }
+
+        .login-subtitle {
+            color: #72767d;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #dcddde;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            background-color: #40444b;
+            border: 1px solid #202225;
+            border-radius: 4px;
+            color: #dcddde;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #7289da;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-login {
+            background-color: #7289da;
+            color: white;
+        }
+
+        .btn-login:hover {
+            background-color: #8299e6;
+        }
+
+        .btn-register {
+            background-color: #43b581;
+            color: white;
+        }
+
+        .btn-register:hover {
+            background-color: #50bf8f;
+        }
+
+        .error-message {
+            color: #f04747;
+            font-size: 12px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .success-message {
+            color: #43b581;
+            font-size: 12px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .chat-container {
+            display: flex;
+            height: 100vh;
+            background-color: #36393f;
+        }
+
+        .sidebar {
+            width: 240px;
+            background-color: #2c2f33;
+            border-right: 1px solid #202225;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .server-header {
+            padding: 15px;
+            border-bottom: 1px solid #202225;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .server-name {
+            font-weight: 600;
+            color: #dcddde;
+            font-size: 16px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-buttons button {
+            background-color: transparent;
+            color: #72767d;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            transition: color 0.2s;
+            padding: 4px 8px;
+        }
+
+        .header-buttons button:hover {
+            color: #dcddde;
+        }
+
+        /* Стили для серверов */
+        .servers-section {
+            border-bottom: 1px solid #202225;
+            padding-bottom: 10px;
+        }
+
+        .server-item {
+            padding: 8px 15px;
+            color: #b9bbbe;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .server-item:hover {
+            background-color: #34373c;
+            color: #dcddde;
+        }
+
+        .server-item.active {
+            background-color: #2f3136;
+            color: #dcddde;
+            border-left: 3px solid #7289da;
+            padding-left: 12px;
+        }
+
+        .server-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7289da, #43b581);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .create-server-btn {
+            background-color: transparent;
+            color: #43b581;
+            border: 2px dashed #43b581;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin: 10px auto;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+
+        .create-server-btn:hover {
+            background-color: #43b581;
+            color: white;
+        }
+
+        .friends-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .section-label {
+            padding: 10px 15px;
+            color: #72767d;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        .friend-item {
+            padding: 8px 15px;
+            color: #b9bbbe;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .friend-item:hover {
+            background-color: #34373c;
+            color: #dcddde;
+        }
+
+        .friend-item.active {
+            background-color: #2f3136;
+            color: #dcddde;
+            border-left: 3px solid #7289da;
+            padding-left: 12px;
+        }
+
+        .friend-item.banned {
+            opacity: 0.5;
+            color: #f04747;
+        }
+
+        .friend-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #7289da;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #36393f;
+        }
+
+        .chat-header {
+            background-color: #2c2f33;
+            padding: 15px 20px;
+            border-bottom: 1px solid #202225;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-title h2 {
+            color: #dcddde;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background-color: #72767d;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background-color: #7d8084;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .welcome-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #72767d;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #7289da;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .message-author {
+            font-weight: 600;
+            color: #dcddde;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #72767d;
+        }
+
+        .message-text {
+            color: #dcddde;
+            word-wrap: break-word;
+        }
+
+        .message.own .message-author {
+            color: #7289da;
+        }
+
+        .input-area {
+            padding: 20px;
+            background-color: #36393f;
+            border-top: 1px solid #202225;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            background-color: #40444b;
+            border: 1px solid #202225;
+            border-radius: 20px;
+            padding: 10px 16px;
+            color: #dcddde;
+            font-size: 14px;
+            resize: none;
+            max-height: 100px;
+            font-family: inherit;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #7289da;
+        }
+
+        .send-btn {
+            background-color: #7289da;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .send-btn:hover {
+            background-color: #8299e6;
+        }
+
+        .add-friend-btn {
+            background-color: #43b581;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .add-friend-btn:hover {
+            background-color: #50bf8f;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #2c2f33;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            color: #dcddde;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            background-color: #40444b;
+            border: 1px solid #202225;
+            border-radius: 4px;
+            color: #dcddde;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #7289da;
+        }
+
+        .search-results {
+            background-color: #40444b;
+            border: 1px solid #202225;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .search-result-item {
+            padding: 10px;
+            color: #dcddde;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #202225;
+            transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+            background-color: #36393f;
+        }
+
+        .admin-panel {
+            padding: 20px;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th {
+            background-color: #40444b;
+            padding: 10px;
+            text-align: left;
+            color: #dcddde;
+            font-weight: 600;
+            border-bottom: 2px solid #202225;
+        }
+
+        .users-table td {
+            padding: 10px;
+            border-bottom: 1px solid #202225;
+        }
+
+        .users-table tr:hover {
+            background-color: #2f3136;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-admin {
+            background-color: #f04747;
+            color: white;
+        }
+
+        .status-banned {
+            background-color: #f04747;
+            color: white;
+        }
+
+        .status-active {
+            background-color: #43b581;
+            color: white;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .admin-actions button {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 2px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+        }
+
+        .btn-confirm {
+            background-color: #43b581;
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background-color: #50bf8f;
+        }
+
+        .btn-cancel {
+            background-color: #72767d;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background-color: #7d8084;
+        }
+
+        .no-friends {
+            color: #72767d;
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .banned-warning {
+            background-color: #f04747;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .user-status {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+
+        .status-online {
+            background-color: #43b581;
+        }
+
+        .status-banned {
+            background-color: #f04747;
+        }
+
+        /* Стили для участников сервера */
+        .server-members {
+            width: 200px;
+            background-color: #2c2f33;
+            border-left: 1px solid #202225;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            color: #b9bbbe;
+        }
+
+        .member-role {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background-color: #7289da;
+            color: white;
+        }
+
+        .role-owner {
+            background-color: #f04747;
+        }
+
+        .role-admin {
+            background-color: #43b581;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <h1>🎉 DarovaChat</h1>
+            <p class="login-subtitle">Добро пожаловать!</p>
+            <p style="font-size: 12px; color: #72767d; margin-bottom: 20px; text-align: center;">Тест: testuser / test123<br>Админ: darovaadmin / admin123</p>
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Юзернейм</label>
+                    <input type="text" id="loginUsername" placeholder="Введи свой юзернейм">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Пароль</label>
+                    <input type="password" id="loginPassword" placeholder="Введи пароль">
+                </div>
+                <div id="loginError" class="error-message"></div>
+                <div class="button-group">
+                    <button class="btn-login" onclick="handleLogin()">Вход</button>
+                    <button class="btn-register" onclick="toggleRegister()">Регистрация</button>
+                </div>
+            </div>
+            <div id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label for="regUsername">Юзернейм</label>
+                    <input type="text" id="regUsername" placeholder="Придумай юзернейм (минимум 3 символа)">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Пароль</label>
+                    <input type="password" id="regPassword" placeholder="Придумай пароль (минимум 6 символов)">
+                </div>
+                <div id="registerError" class="error-message"></div>
+                <div id="registerSuccess" class="success-message"></div>
+                <div class="button-group">
+                    <button class="btn-register" onclick="handleRegister()">Создать аккаунт</button>
+                    <button class="btn-login" onclick="toggleRegister()">Вернуться</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatPage" class="chat-container" style="display: none;">
+        <div class="sidebar">
+            <div class="server-header">
+                <div class="server-name">DarovaChat</div>
+                <div class="header-buttons">
+                    <button onclick="openAddFriendModal()" title="Добавить друга">➕</button>
+                    <button onclick="openCreateServerModal()" title="Создать сервер">🏠</button>
+                    <button onclick="openProfileModal()" title="Профиль">👤</button>
+                </div>
+            </div>
+
+            <!-- Секция серверов -->
+            <div class="servers-section">
+                <div class="section-label">Серверы</div>
+                <div id="serversList">
+                    <div class="no-friends">Нет серверов</div>
+                </div>
+                <div class="create-server-btn" onclick="openCreateServerModal()" title="Создать сервер">
+                    +
+                </div>
+            </div>
+
+            <!-- Секция друзей -->
+            <div class="friends-section">
+                <div class="section-label">Личные сообщения</div>
+                <div id="friendsList">
+                    <div class="no-friends">Нет друзей. Добавьте друга!</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <span>💬</span>
+                    <h2 id="chatTitle">DarovaChat</h2>
+                </div>
+                <div class="header-actions">
+                    <button id="adminPanelBtn" class="admin-btn" onclick="openAdminPanel()" style="display: none;">⚙️ Админ</button>
+                    <button class="logout-btn" onclick="handleLogout()">Выход</button>
+                </div>
+            </div>
+
+            <div id="messagesArea" class="messages-area">
+                <div class="welcome-screen">
+                    <div>
+                        <div style="font-size: 48px; margin-bottom: 10px;">👋</div>
+                        <div>Добро пожаловать в DarovaChat!</div>
+                        <div style="font-size: 14px; color: #72767d; margin-top: 10px;">Выбери друга или сервер из списка, чтобы начать общение</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea id="messageInput" class="message-input" placeholder="Введи сообщение..." rows="1" style="display: none;"></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()" style="display: none;">➤</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список участников сервера -->
+        <div id="serverMembers" class="server-members" style="display: none;">
+            <div class="section-label">Участники</div>
+            <div id="membersList"></div>
+        </div>
+    </div>
+
+    <!-- Модальные окна -->
+    <div id="addFriendModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Добавить друга</div>
+            <input type="text" id="friendSearch" class="modal-input" placeholder="Введи юзернейм...">
+            <div id="searchResults" class="search-results"></div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeAddFriendModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">⚙️ Админ-панель</div>
+            <div id="adminPanel" class="admin-panel"></div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeAdminPanel()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">👤 Мой профиль</div>
+            <div style="padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div id="profileAvatarDisplay" style="width: 80px; height: 80px; margin: 0 auto 15px; border-radius: 50%; background-color: #7289da; display: flex; align-items: center; justify-content: center; font-size: 40px;"></div>
+                    <div id="profileDisplayName" style="color: #dcddde; font-weight: 600; font-size: 18px;"></div>
+                    <div id="profileUsername" style="color: #72767d; font-size: 14px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Отображаемое имя</label>
+                    <input type="text" id="displayNameInput" placeholder="Оставь пусто для использования юзернейма" class="modal-input">
+                </div>
+
+                <div class="form-group">
+                    <label>Аватарка (emoji или URL)</label>
+                    <input type="text" id="avatarInput" placeholder="Например: 😎 или https://example.com/avatar.png" class="modal-input">
+                    <div id="avatarPreview" style="margin-top: 10px; color: #72767d; font-size: 12px;">Предпросмотр: <span id="avatarPreviewText">😊</span></div>
+                </div>
+
+                <div id="profileError" class="error-message" style="margin-top: 15px;"></div>
+                <div id="profileSuccess" class="success-message" style="margin-top: 15px;"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-confirm" onclick="saveProfile()">Сохранить</button>
+                <button class="btn-cancel" onclick="closeProfileModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="createServerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">🏠 Создать сервер</div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <label>Название сервера</label>
+                    <input type="text" id="serverNameInput" class="modal-input" placeholder="Придумай название сервера" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label>Описание (необязательно)</label>
+                    <textarea id="serverDescInput" class="modal-input" placeholder="Описание сервера" rows="3"></textarea>
+                </div>
+                <div id="serverError" class="error-message" style="margin-top: 15px;"></div>
+                <div id="serverSuccess" class="success-message" style="margin-top: 15px;"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-confirm" onclick="createServer()">Создать</button>
+                <button class="btn-cancel" onclick="closeCreateServerModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentFriend = null;
+        let currentServer = null;
+
+        // Проверяем авторизацию при загрузке страницы
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const user = await response.json();
+                    currentUser = user;
+
+                    document.getElementById('loginPage').style.display = 'none';
+                    document.getElementById('chatPage').style.display = 'flex';
+
+                    const adminBtn = document.getElementById('adminPanelBtn');
+                    if (currentUser.is_admin) {
+                        adminBtn.style.display = 'block';
+                    }
+
+                    loadServers();
+                    loadFriends();
+                    setInterval(loadFriends, 3000);
+                    setInterval(() => {
+                        if (currentServer) loadServerMessages();
+                        if (currentFriend) loadMessages();
+                    }, 2000);
+
+                    console.log('Автоматически вошли как:', user.username);
+                }
+            } catch (error) {
+                console.log('Нужно войти в аккаунт');
+            }
+        });
+
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorDiv.textContent = 'Заполни все поля';
+                return;
+            }
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    loadChat();
+                } else {
+                    const data = await response.json();
+                    errorDiv.textContent = data.error || 'Неверные учетные данные';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Ошибка при входе';
+            }
+        }
+
+        async function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const errorDiv = document.getElementById('registerError');
+            const successDiv = document.getElementById('registerSuccess');
+
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
+
+            if (!username || !password) {
+                errorDiv.textContent = 'Заполни все поля';
+                return;
+            }
+
+            if (username.length < 3) {
+                errorDiv.textContent = 'Юзернейм минимум 3 символа';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorDiv.textContent = 'Пароль минимум 6 символов';
+                return;
+            }
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    successDiv.textContent = 'Аккаунт создан! Загружаю чат...';
+                    setTimeout(() => loadChat(), 1500);
+                } else {
+                    const data = await response.json();
+                    errorDiv.textContent = data.error || 'Ошибка регистрации';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Ошибка при регистрации';
+            }
+        }
+
+        function toggleRegister() {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+            registerForm.style.display = registerForm.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('registerError').textContent = '';
+            document.getElementById('registerSuccess').textContent = '';
+        }
+
+        async function loadChat() {
+            try {
+                const userResponse = await fetch('/api/user');
+                const user = await userResponse.json();
+                currentUser = user;
+
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('chatPage').style.display = 'flex';
+
+                const adminBtn = document.getElementById('adminPanelBtn');
+                if (currentUser.is_admin) {
+                    adminBtn.style.display = 'block';
+                }
+
+                loadServers();
+                loadFriends();
+                setInterval(loadFriends, 3000);
+                setInterval(() => {
+                    if (currentServer) loadServerMessages();
+                    if (currentFriend) loadMessages();
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error loading chat:', error);
+            }
+        }
+
+        // Функции для серверов
+        function openCreateServerModal() {
+            document.getElementById('createServerModal').classList.add('active');
+            document.getElementById('serverNameInput').focus();
+        }
+
+        function closeCreateServerModal() {
+            document.getElementById('createServerModal').classList.remove('active');
+            document.getElementById('serverNameInput').value = '';
+            document.getElementById('serverDescInput').value = '';
+            document.getElementById('serverError').textContent = '';
+            document.getElementById('serverSuccess').textContent = '';
+        }
+
+        async function createServer() {
+            const name = document.getElementById('serverNameInput').value.trim();
+            const description = document.getElementById('serverDescInput').value.trim();
+            const errorDiv = document.getElementById('serverError');
+            const successDiv = document.getElementById('serverSuccess');
+
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
+
+            if (!name) {
+                errorDiv.textContent = 'Название сервера обязательно';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/servers/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+
+                if (response.ok) {
+                    successDiv.textContent = 'Сервер создан! ✅';
+                    setTimeout(() => {
+                        closeCreateServerModal();
+                        loadServers();
+                    }, 1500);
+                } else {
+                    const data = await response.json();
+                    errorDiv.textContent = data.error || 'Ошибка создания сервера';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Ошибка создания сервера';
+            }
+        }
+
+        async function loadServers() {
+            try {
+                const response = await fetch('/api/servers');
+                const servers = await response.json();
+                const serversList = document.getElementById('serversList');
+
+                if (servers.length === 0) {
+                    serversList.innerHTML = '<div class="no-friends">Нет серверов</div>';
+                    return;
+                }
+
+                serversList.innerHTML = servers.map(server => `
+                    <div class="server-item ${currentServer && currentServer.id === server.id ? 'active' : ''}"
+                         onclick="selectServer(${server.id}, '${escapeHtml(server.name)}')">
+                        <div class="server-avatar">${server.name[0].toUpperCase()}</div>
+                        <div>${escapeHtml(server.name)}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading servers:', error);
+            }
+        }
+
+        async function selectServer(serverId, serverName) {
+            currentServer = { id: serverId, name: serverName };
+            currentFriend = null;
+
+            document.getElementById('chatTitle').textContent = serverName;
+            document.getElementById('messageInput').style.display = 'block';
+            document.getElementById('sendBtn').style.display = 'flex';
+            document.getElementById('serverMembers').style.display = 'block';
+
+            loadServerMessages();
+            loadServerMembers();
+            loadServers();
+            loadFriends();
+        }
+
+        async function loadServerMessages() {
+            if (!currentServer) return;
+
+            try {
+                const response = await fetch(`/api/servers/${currentServer.id}/messages`);
+                const messages = await response.json();
+                const messagesArea = document.getElementById('messagesArea');
+
+                if (messages.length === 0) {
+                    messagesArea.innerHTML = `
+                        <div style="text-align: center; color: #72767d; margin-top: 50px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">🏠</div>
+                            <div>Добро пожаловать в ${currentServer.name}!</div>
+                            <div style="font-size: 14px; margin-top: 10px;">Начни общение в сервере</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                messagesArea.innerHTML = messages.map(msg => `
+                    <div class="message ${msg.sender_id === currentUser.id ? 'own' : ''}">
+                        <div class="message-avatar">${msg.username[0].toUpperCase()}</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">${msg.sender_id === currentUser.id ? 'Вы' : (msg.display_name || msg.username)}</span>
+                                <span class="message-time">${new Date(msg.created_at).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</span>
+                            </div>
+                            <div class="message-text">${escapeHtml(msg.message)}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            } catch (error) {
+                console.error('Error loading server messages:', error);
+            }
+        }
+
+        async function loadServerMembers() {
+            if (!currentServer) return;
+
+            try {
+                const response = await fetch(`/api/servers/${currentServer.id}/members`);
+                const members = await response.json();
+                const membersList = document.getElementById('membersList');
+
+                membersList.innerHTML = members.map(member => `
+                    <div class="member-item">
+                        <div class="friend-avatar">${member.username[0].toUpperCase()}</div>
+                        <div style="flex: 1;">
+                            ${escapeHtml(member.display_name || member.username)}
+                            ${member.is_banned ? '<span style="color: #f04747; margin-left: 5px;">🚫</span>' : ''}
+                        </div>
+                        ${member.role !== 'member' ? `
+                            <div class="member-role ${member.role === 'owner' ? 'role-owner' : 'role-admin'}">
+                                ${member.role === 'owner' ? 'Владелец' : 'Админ'}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading server members:', error);
+            }
+        }
+
+        async function loadFriends() {
+            try {
+                const response = await fetch('/api/friends');
+                const friends = await response.json();
+                const friendsList = document.getElementById('friendsList');
+
+                if (friends.length === 0) {
+                    friendsList.innerHTML = '<div class="no-friends">Нет друзей. Добавьте друга!</div>';
+                    return;
+                }
+
+                friendsList.innerHTML = friends.map(friend => `
+                    <div class="friend-item ${currentFriend && currentFriend.id === friend.id ? 'active' : ''} ${friend.is_banned ? 'banned' : ''}" onclick="selectFriend(${friend.id}, '${escapeHtml(friend.username)}')">
+                        <div class="friend-avatar">${friend.username[0].toUpperCase()}</div>
+                        <div>
+                            ${escapeHtml(friend.username)}
+                            ${friend.is_banned ? '<span class="user-status status-banned">забанен</span>' : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading friends:', error);
+            }
+        }
+
+        function selectFriend(friendId, username) {
+            currentFriend = { id: friendId, username };
+            currentServer = null;
+
+            document.getElementById('chatTitle').textContent = username;
+            document.getElementById('messageInput').style.display = 'block';
+            document.getElementById('sendBtn').style.display = 'flex';
+            document.getElementById('serverMembers').style.display = 'none';
+
+            loadMessages();
+            loadServers();
+            loadFriends();
+        }
+
+        async function loadMessages() {
+            if (!currentFriend) return;
+
+            try {
+                const response = await fetch(`/api/messages/${currentFriend.id}`);
+                const messages = await response.json();
+                const messagesArea = document.getElementById('messagesArea');
+
+                if (messages.length === 0) {
+                    messagesArea.innerHTML = `
+                        <div style="text-align: center; color: #72767d; margin-top: 50px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">💬</div>
+                            <div>Начни переписку с ${currentFriend.username}!</div>
+                            <div style="font-size: 14px; margin-top: 10px;">Напиши первое сообщение</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                messagesArea.innerHTML = messages.map(msg => `
+                    <div class="message ${msg.sender_id === currentUser.id ? 'own' : ''}">
+                        <div class="message-avatar">${msg.sender_id === currentUser.id ? currentUser.username[0].toUpperCase() : currentFriend.username[0].toUpperCase()}</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">${msg.sender_id === currentUser.id ? 'Вы' : currentFriend.username}</span>
+                                <span class="message-time">${new Date(msg.created_at).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</span>
+                            </div>
+                            <div class="message-text">${escapeHtml(msg.message)}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            try {
+                let url, body;
+
+                if (currentServer) {
+                    url = '/api/servers/send-message';
+                    body = JSON.stringify({ server_id: currentServer.id, message });
+                } else if (currentFriend) {
+                    url = '/api/send-message';
+                    body = JSON.stringify({ recipient_id: currentFriend.id, message });
+                } else {
+                    return;
+                }
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    input.value = '';
+                    if (currentServer) {
+                        loadServerMessages();
+                    } else {
+                        loadMessages();
+                    }
+                } else {
+                    alert(data.error || 'Ошибка отправки');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('messageInput')?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            document.getElementById('friendSearch')?.addEventListener('input', searchUsers);
+        });
+
+        function openAddFriendModal() {
+            document.getElementById('addFriendModal').classList.add('active');
+            document.getElementById('friendSearch').focus();
+        }
+
+        function closeAddFriendModal() {
+            document.getElementById('addFriendModal').classList.remove('active');
+            document.getElementById('friendSearch').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+        }
+
+        let searchTimeout;
+        async function searchUsers(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+
+            if (query.length < 1) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/search-users?q=${encodeURIComponent(query)}`);
+                    const users = await response.json();
+                    const resultsDiv = document.getElementById('searchResults');
+
+                    resultsDiv.innerHTML = users.map(user => `
+                        <div class="search-result-item">
+                            <div>
+                                ${escapeHtml(user.username)}
+                                ${user.is_banned ? '<span style="color: #f04747; margin-left: 5px;">🚫</span>' : ''}
+                            </div>
+                            <button class="add-friend-btn" onclick="addFriendByName('${escapeHtml(user.username).replace(/'/g, "\\'")}')">Добавить</button>
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    console.error('Error searching users:', error);
+                }
+            }, 300);
+        }
+
+        async function addFriendByName(username) {
+            try {
+                const response = await fetch('/api/add-friend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+
+                if (response.ok) {
+                    closeAddFriendModal();
+                    await loadFriends();
+                    alert('Друг добавлен! ✅');
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'Ошибка добавления');
+                }
+            } catch (error) {
+                console.error('Error adding friend:', error);
+                alert('Ошибка добавления друга');
+            }
+        }
+
+        // АДМИН ПАНЕЛЬ
+        async function openAdminPanel() {
+            if (!currentUser.is_admin) return;
+
+            try {
+                const response = await fetch('/api/admin/users');
+                const users = await response.json();
+
+                let html = '<table class="users-table"><thead><tr><th>Юзернейм</th><th>Статус</th><th>Действия</th></tr></thead><tbody>';
+
+                for (const user of users) {
+                    let status = 'Активен';
+                    let statusClass = 'status-active';
+
+                    if (user.is_banned) {
+                        status = `Забанен (${user.ban_reason})`;
+                        statusClass = 'status-banned';
+                    } else if (user.is_admin) {
+                        status = 'Администратор';
+                        statusClass = 'status-admin';
+                    }
+
+                    html += `<tr>
+                        <td>${escapeHtml(user.username)}</td>
+                        <td><span class="status-badge ${statusClass}">${status}</span></td>
+                        <td><div class="admin-actions">
+                            ${user.is_banned ?
+                                `<button class="btn-confirm" onclick="adminUnbanUser(${user.id})">Разбанить</button>` :
+                                `<button class="admin-btn" onclick="adminBanUser(${user.id})">Забанить</button>`
+                            }
+                            ${user.is_admin ?
+                                `<button class="btn-cancel" onclick="adminRemoveAdmin(${user.id})">Забрать админку</button>` :
+                                `<button class="btn-confirm" onclick="adminMakeAdmin(${user.id})">Дать админку</button>`
+                            }
+                        </div></td>
+                    </tr>`;
+                }
+
+                html += '</tbody></table>';
+                document.getElementById('adminPanel').innerHTML = html;
+                document.getElementById('adminModal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading admin panel:', error);
+            }
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminModal').classList.remove('active');
+        }
+
+        async function adminBanUser(userId) {
+            const reason = prompt('Причина бана:');
+            if (!reason) return;
+
+            try {
+                const response = await fetch('/api/admin/ban-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, reason })
+                });
+
+                if (response.ok) {
+                    alert('Пользователь забанен ✅');
+                    openAdminPanel();
+                } else {
+                    alert('Ошибка при бане');
+                }
+            } catch (error) {
+                console.error('Error banning user:', error);
+            }
+        }
+
+        async function adminUnbanUser(userId) {
+            try {
+                const response = await fetch('/api/admin/unban-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+
+                if (response.ok) {
+                    alert('Пользователь разбанен ✅');
+                    openAdminPanel();
+                } else {
+                    alert('Ошибка при разбане');
+                }
+            } catch (error) {
+                console.error('Error unbanning user:', error);
+            }
+        }
+
+        async function adminMakeAdmin(userId) {
+            try {
+                const response = await fetch('/api/admin/make-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+
+                if (response.ok) {
+                    alert('Пользователь стал администратором ✅');
+                    openAdminPanel();
+                } else {
+                    alert('Ошибка');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function adminRemoveAdmin(userId) {
+            try {
+                const response = await fetch('/api/admin/remove-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+
+                if (response.ok) {
+                    alert('Админка отобрана ✅');
+                    openAdminPanel();
+                } else {
+                    alert('Ошибка');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function handleLogout() {
+            window.location.href = '/logout';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ПРОФИЛЬ
+        async function openProfileModal() {
+            try {
+                const response = await fetch('/api/user');
+                const user = await response.json();
+
+                document.getElementById('profileUsername').textContent = `@${user.username}`;
+                document.getElementById('profileDisplayName').textContent = user.display_name || user.username;
+
+                const avatarText = user.avatar || user.display_name?.[0]?.toUpperCase() || user.username[0].toUpperCase();
+                document.getElementById('profileAvatarDisplay').textContent = avatarText;
+
+                document.getElementById('displayNameInput').value = user.display_name || '';
+                document.getElementById('avatarInput').value = user.avatar || '';
+
+                updateAvatarPreview();
+                document.getElementById('profileError').textContent = '';
+                document.getElementById('profileSuccess').textContent = '';
+
+                document.getElementById('profileModal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+
+        function updateAvatarPreview() {
+            const avatar = document.getElementById('avatarInput').value.trim();
+            document.getElementById('avatarPreviewText').textContent = avatar || '😊';
+        }
+
+        document.getElementById('avatarInput')?.addEventListener('input', updateAvatarPreview);
+
+        async function saveProfile() {
+            const displayName = document.getElementById('displayNameInput').value.trim();
+            const avatar = document.getElementById('avatarInput').value.trim();
+            const errorDiv = document.getElementById('profileError');
+            const successDiv = document.getElementById('profileSuccess');
+
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
+
+            if (displayName.length > 50) {
+                errorDiv.textContent = 'Отображаемое имя не должно превышать 50 символов';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/profile/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ display_name: displayName, avatar })
+                });
+
+                if (response.ok) {
+                    successDiv.textContent = 'Профиль обновлен! ✅';
+                    setTimeout(() => {
+                        closeProfileModal();
+                        location.reload();
+                    }, 1500);
+                } else {
+                    const data = await response.json();
+                    errorDiv.textContent = data.error || 'Ошибка при сохранении';
+                }
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                errorDiv.textContent = 'Ошибка при сохранении';
+            }
+        }
+    </script>
+</body>
+</html>
