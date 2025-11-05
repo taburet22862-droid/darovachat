@@ -2,11 +2,14 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
-from datetime import datetime
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'super-secret-darova-2024-key-change-me'
+
+# Для Render важно указать правильный путь к БД
+DATABASE = '/tmp/darova_chat.db'  # Или просто 'darova_chat.db'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 7
@@ -682,4 +685,5 @@ if __name__ == '__main__':
     init_db()
 
     print("🚀 DarovaChat запущен на http://localhost:5000")
+
     app.run(debug=True, port=5000)
