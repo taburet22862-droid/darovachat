@@ -1612,288 +1612,369 @@
                 errorDiv.textContent = 'Ошибка при сохранении';
             }
         }
-        // WebRTC переменные
-let localStream = null;
-let peerConnection = null;
-let isInVoiceCall = false;
-let voiceInterval = null;
+        // ==================== WEBRTC МЕНЕДЖЕР ====================
+class VoiceChatManager {
+    constructor() {
+        this.localStream = null;
+        this.peerConnection = null;
+        this.isInCall = false;
+        this.signalInterval = null;
+        this.currentCallId = null;
+    }
 
-// Показываем кнопки голосового чата когда выбран друг
+    // Начать новый звонок
+    async startCall() {
+        if (this.isInCall) {
+            this.showStatus('❌ Уже в звонке!', 'error');
+            return;
+        }
+
+        if (!currentFriend) {
+            this.showStatus('❌ Выбери друга!', 'error');
+            return;
+        }
+
+        try {
+            this.showStatus('🎤 Запрос микрофона...', 'info');
+
+            // Получаем микрофон
+            this.localStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
+                video: false
+            });
+
+            // Создаем уникальный ID звонка
+            this.currentCallId = Date.now().toString();
+
+            // Настраиваем Peer Connection
+            await this.setupPeerConnection();
+
+            // Создаем оффер
+            const offer = await this.peerConnection.createOffer();
+            await this.peerConnection.setLocalDescription(offer);
+
+            // Отправляем оффер
+            await this.sendSignal({
+                type: 'offer',
+                offer: offer,
+                callId: this.currentCallId
+            });
+
+            this.isInCall = true;
+            this.updateUI();
+            this.showStatus('🔄 Звонок начат...', 'info');
+
+            // Запускаем проверку сигналов
+            this.startSignalPolling();
+
+        } catch (error) {
+            console.error('Start call error:', error);
+            this.showStatus('❌ Ошибка: ' + error.message, 'error');
+            this.cleanup();
+        }
+    }
+
+    // Присоединиться к существующему звонку
+    async joinCall() {
+        if (this.isInCall) {
+            this.showStatus('❌ Уже в звонке!', 'error');
+            return;
+        }
+
+        if (!currentFriend) {
+            this.showStatus('❌ Выбери друга!', 'error');
+            return;
+        }
+
+        try {
+            this.showStatus('🎤 Подключаюсь...', 'info');
+
+            // Получаем микрофон
+            this.localStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
+                video: false
+            });
+
+            // Настраиваем Peer Connection (без callId - получим из оффера)
+            await this.setupPeerConnection();
+
+            this.isInCall = true;
+            this.updateUI();
+            this.showStatus('⏳ Ожидаю предложение...', 'info');
+
+            // Запускаем проверку сигналов
+            this.startSignalPolling();
+
+        } catch (error) {
+            console.error('Join call error:', error);
+            this.showStatus('❌ Ошибка: ' + error.message, 'error');
+            this.cleanup();
+        }
+    }
+
+    // Завершить звонок
+    endCall() {
+        this.showStatus('📞 Завершение...', 'info');
+        this.sendSignal({ type: 'hangup' });
+        this.cleanup();
+        this.showStatus('', 'info');
+    }
+
+    // Настройка Peer Connection
+    async setupPeerConnection() {
+        // Конфигурация ICE серверов
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ],
+            iceCandidatePoolSize: 5
+        };
+
+        this.peerConnection = new RTCPeerConnection(configuration);
+
+        // Добавляем локальные треки
+        this.localStream.getTracks().forEach(track => {
+            this.peerConnection.addTrack(track, this.localStream);
+        });
+
+        // Обработчики событий
+        this.peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                this.sendSignal({
+                    type: 'ice-candidate',
+                    candidate: event.candidate,
+                    callId: this.currentCallId
+                });
+            }
+        };
+
+        this.peerConnection.ontrack = (event) => {
+            console.log('Получен удаленный аудиопоток');
+            document.getElementById('remoteAudio').srcObject = event.streams[0];
+            this.showStatus('✅ Соединение установлено!', 'success');
+        };
+
+        this.peerConnection.onconnectionstatechange = () => {
+            const state = this.peerConnection.connectionState;
+            console.log('Connection state:', state);
+
+            if (state === 'connected') {
+                this.showStatus('✅ Соединено!', 'success');
+            } else if (state === 'failed' || state === 'disconnected') {
+                this.showStatus('❌ Соединение прервано', 'error');
+                this.cleanup();
+            }
+        };
+    }
+
+    // Обработка входящих сигналов
+    async handleIncomingSignal(signal) {
+        if (!this.peerConnection) return;
+
+        try {
+            switch (signal.type) {
+                case 'offer':
+                    // Игнорируем если уже в звонке или это наш собственный оффер
+                    if (this.isInCall || signal.callId === this.currentCallId) {
+                        return;
+                    }
+
+                    this.currentCallId = signal.callId;
+                    await this.peerConnection.setRemoteDescription(new RTCSessionDescription(signal.offer));
+
+                    const answer = await this.peerConnection.createAnswer();
+                    await this.peerConnection.setLocalDescription(answer);
+
+                    await this.sendSignal({
+                        type: 'answer',
+                        answer: answer,
+                        callId: this.currentCallId
+                    });
+
+                    this.showStatus('✅ Принят входящий звонок!', 'success');
+                    break;
+
+                case 'answer':
+                    // Принимаем ответ только если ожидаем его
+                    if (this.peerConnection.signalingState === 'have-local-offer') {
+                        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(signal.answer));
+                        this.showStatus('✅ Соединение установлено!', 'success');
+                    }
+                    break;
+
+                case 'ice-candidate':
+                    // Добавляем ICE кандидата
+                    if (this.peerConnection.remoteDescription) {
+                        await this.peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate));
+                    }
+                    break;
+
+                case 'hangup':
+                    this.showStatus('📞 Собеседник завершил звонок', 'info');
+                    this.cleanup();
+                    break;
+            }
+        } catch (error) {
+            console.error('Signal handling error:', error);
+        }
+    }
+
+    // Отправка сигнала
+    async sendSignal(signalData) {
+        if (!currentFriend) return;
+
+        try {
+            await fetch('/api/webrtc/signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    target_user_id: currentFriend.id,
+                    signal: signalData
+                })
+            });
+        } catch (error) {
+            console.error('Send signal error:', error);
+        }
+    }
+
+    // Опрос новых сигналов
+    async checkForSignals() {
+        if (!this.isInCall || !currentFriend) return;
+
+        try {
+            const response = await fetch('/api/webrtc/signals');
+            const data = await response.json();
+
+            for (const signal of data.signals) {
+                await this.handleIncomingSignal(signal.signal);
+            }
+        } catch (error) {
+            console.error('Signal polling error:', error);
+        }
+    }
+
+    // Запуск опроса сигналов
+    startSignalPolling() {
+        this.signalInterval = setInterval(() => {
+            this.checkForSignals();
+        }, 1000);
+    }
+
+    // Очистка ресурсов
+    cleanup() {
+        if (this.signalInterval) {
+            clearInterval(this.signalInterval);
+            this.signalInterval = null;
+        }
+
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+
+        if (this.peerConnection) {
+            this.peerConnection.close();
+            this.peerConnection = null;
+        }
+
+        this.isInCall = false;
+        this.currentCallId = null;
+        this.updateUI();
+
+        document.getElementById('remoteAudio').srcObject = null;
+        document.getElementById('localAudio').srcObject = null;
+    }
+
+    // Обновление UI
+    updateUI() {
+        const startBtn = document.getElementById('startVoiceBtn');
+        const joinBtn = document.getElementById('joinVoiceBtn');
+        const endBtn = document.getElementById('endVoiceBtn');
+
+        if (this.isInCall) {
+            startBtn.style.display = 'none';
+            joinBtn.style.display = 'none';
+            endBtn.style.display = 'block';
+        } else {
+            startBtn.style.display = 'block';
+            joinBtn.style.display = 'block';
+            endBtn.style.display = 'none';
+        }
+    }
+
+    // Показать статус
+    showStatus(message, type = 'info') {
+        const statusEl = document.getElementById('voiceStatus');
+        statusEl.textContent = message;
+
+        const colors = {
+            info: '#72767d',
+            success: '#43b581',
+            error: '#f04747'
+        };
+
+        statusEl.style.color = colors[type] || colors.info;
+    }
+}
+
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
+const voiceManager = new VoiceChatManager();
+
+// Обновить функцию отображения контролов
 function updateVoiceControls() {
     const voiceControls = document.getElementById('voiceControls');
     if (currentFriend && !currentServer) {
         voiceControls.style.display = 'flex';
+        voiceManager.updateUI();
     } else {
         voiceControls.style.display = 'none';
-        endVoiceCall();
+        voiceManager.endCall();
     }
 }
 
-// Обнови вызовы selectFriend и selectServer
+// Обновить вызовы selectFriend и selectServer
 function selectFriend(friendId, username) {
     currentFriend = { id: friendId, username };
     currentServer = null;
-    document.getElementById('chatTitle').textContent = username;
-    document.getElementById('messageInput').style.display = 'block';
-    document.getElementById('sendBtn').style.display = 'flex';
-    document.getElementById('serverMembers').style.display = 'none';
-
-    loadMessages();
-    loadServers();
-    loadFriends();
+    // ... остальной твой код ...
     updateVoiceControls(); // Добавь эту строку
 }
 
 function selectServer(serverId, serverName) {
     currentServer = { id: serverId, name: serverName };
     currentFriend = null;
-    document.getElementById('chatTitle').textContent = serverName;
-    document.getElementById('messageInput').style.display = 'block';
-    document.getElementById('sendBtn').style.display = 'flex';
-    document.getElementById('serverMembers').style.display = 'block';
-
-    loadServerMessages();
-    loadServerMembers();
-    loadServers();
-    loadFriends();
+    // ... остальной твой код ...
     updateVoiceControls(); // Добавь эту строку
 }
 
-// Начать голосовой звонок
-async function startVoiceCall() {
-    try {
-        document.getElementById('voiceStatus').textContent = 'Запрос разрешения...';
-
-        // Получаем доступ к микрофону
-        localStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: false
-        });
-
-        document.getElementById('localAudio').srcObject = localStream;
-
-        // Создаем Peer Connection
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-
-        peerConnection = new RTCPeerConnection(configuration);
-
-        // Добавляем локальный поток
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
-
-        // Обработка входящих потоков
-        peerConnection.ontrack = (event) => {
-            document.getElementById('remoteAudio').srcObject = event.streams[0];
-        };
-
-        // Генерируем ICE кандидаты
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                sendSignal({
-                    type: 'ice-candidate',
-                    candidate: event.candidate
-                });
-            }
-        };
-
-        // Создаем оффер
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-
-        // Отправляем оффер другу
-        await sendSignal({
-            type: 'offer',
-            offer: offer
-        });
-
-        isInVoiceCall = true;
-        updateVoiceUI();
-        document.getElementById('voiceStatus').textContent = 'Звонок начат...';
-
-        // Запускаем проверку сигналов
-        voiceInterval = setInterval(checkForSignals, 2000);
-
-    } catch (error) {
-        console.error('Error starting voice call:', error);
-        document.getElementById('voiceStatus').textContent = 'Ошибка: ' + error.message;
-    }
+// Глобальные функции для кнопок
+function startVoiceCall() {
+    voiceManager.startCall();
 }
 
-// Присоединиться к звонку
-async function joinVoiceCall() {
-    try {
-        document.getElementById('voiceStatus').textContent = 'Подключение...';
-
-        // Получаем доступ к микрофону
-        localStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: false
-        });
-
-        document.getElementById('localAudio').srcObject = localStream;
-
-        // Создаем Peer Connection
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-
-        peerConnection = new RTCPeerConnection(configuration);
-
-        // Добавляем локальный поток
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
-
-        // Обработка входящих потоков
-        peerConnection.ontrack = (event) => {
-            document.getElementById('remoteAudio').srcObject = event.streams[0];
-        };
-
-        // Генерируем ICE кандидаты
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                sendSignal({
-                    type: 'ice-candidate',
-                    candidate: event.candidate
-                });
-            }
-        };
-
-        isInVoiceCall = true;
-        updateVoiceUI();
-        document.getElementById('voiceStatus').textContent = 'Ожидание предложения...';
-
-        // Запускаем проверку сигналов
-        voiceInterval = setInterval(checkForSignals, 2000);
-
-    } catch (error) {
-        console.error('Error joining voice call:', error);
-        document.getElementById('voiceStatus').textContent = 'Ошибка: ' + error.message;
-    }
+function joinVoiceCall() {
+    voiceManager.joinCall();
 }
 
-// Завершить звонок
 function endVoiceCall() {
-    if (voiceInterval) {
-        clearInterval(voiceInterval);
-        voiceInterval = null;
-    }
-
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-    }
-
-    if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-    }
-
-    isInVoiceCall = false;
-    updateVoiceUI();
-    document.getElementById('voiceStatus').textContent = '';
-    document.getElementById('remoteAudio').srcObject = null;
-    document.getElementById('localAudio').srcObject = null;
-
-    // Отправляем сигнал о завершении
-    sendSignal({ type: 'hangup' });
+    voiceManager.endCall();
 }
 
-// Обновление UI голосового чата
-function updateVoiceUI() {
-    const startBtn = document.getElementById('startVoiceBtn');
-    const joinBtn = document.getElementById('joinVoiceBtn');
-    const endBtn = document.getElementById('endVoiceBtn');
+// Автоочистка при закрытии страницы
+window.addEventListener('beforeunload', () => {
+    voiceManager.endCall();
+});
 
-    if (isInVoiceCall) {
-        startBtn.style.display = 'none';
-        joinBtn.style.display = 'none';
-        endBtn.style.display = 'block';
-    } else {
-        startBtn.style.display = 'block';
-        joinBtn.style.display = 'block';
-        endBtn.style.display = 'none';
-    }
-}
-
-// Отправка сигналов
-async function sendSignal(signalData) {
-    if (!currentFriend) return;
-
-    try {
-        await fetch('/api/webrtc/signal', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                target_user_id: currentFriend.id,
-                signal: signalData
-            })
-        });
-    } catch (error) {
-        console.error('Error sending signal:', error);
-    }
-}
-
-// Проверка входящих сигналов
-async function checkForSignals() {
-    if (!currentFriend || !isInVoiceCall) return;
-
-    try {
-        const response = await fetch('/api/webrtc/signals');
-        const data = await response.json();
-
-        for (const signal of data.signals) {
-            await handleSignal(signal.signal);
-        }
-    } catch (error) {
-        console.error('Error checking signals:', error);
-    }
-}
-
-// Обработка входящих сигналов
-async function handleSignal(signal) {
-    if (!peerConnection) return;
-
-    try {
-        switch (signal.type) {
-            case 'offer':
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                await sendSignal({
-                    type: 'answer',
-                    answer: answer
-                });
-                document.getElementById('voiceStatus').textContent = 'Подключено!';
-                break;
-
-            case 'answer':
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.answer));
-                document.getElementById('voiceStatus').textContent = 'Подключено!';
-                break;
-
-            case 'ice-candidate':
-                await peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate));
-                break;
-
-            case 'hangup':
-                endVoiceCall();
-                document.getElementById('voiceStatus').textContent = 'Звонок завершен';
-                break;
-        }
-    } catch (error) {
-        console.error('Error handling signal:', error);
-    }
-}
     </script>
 </body>
 </html>
