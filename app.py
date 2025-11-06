@@ -2,14 +2,11 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
-import os
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 app.secret_key = 'super-secret-darova-2024-key-change-me'
-
-# Для Render важно указать правильный путь к БД
-DATABASE = '/tmp/darova_chat.db'  # Или просто 'darova_chat.db'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 7
@@ -683,8 +680,63 @@ def get_server_members(server_id):
 
     return jsonify([dict(member) for member in members])
 
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    init_db()
-    app.run(host='0.0.0.0', port=port, debug=False)
 
+# Хранилище для WebRTC сигналов (в продакшене используй Redis)
+webrtc_connections = {}
+
+
+@app.route('/api/webrtc/signal', methods=['POST'])
+def webrtc_signal():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    data = request.get_json()
+    target_user_id = data.get('target_user_id')
+    signal_data = data.get('signal')
+
+    if target_user_id not in webrtc_connections:
+        webrtc_connections[target_user_id] = []
+
+    webrtc_connections[target_user_id].append({
+        'from_user_id': session['user_id'],
+        'signal': signal_data,
+        'timestamp': datetime.now().isoformat()
+    })
+
+    return jsonify({'success': True})
+
+
+@app.route('/api/webrtc/signals')
+def get_webrtc_signals():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    user_id = session['user_id']
+    signals = webrtc_connections.get(user_id, [])
+
+    # Очищаем полученные сигналы
+    webrtc_connections[user_id] = []
+
+    return jsonify({'signals': signals})
+
+if __name__ == '__main__':
+    init_db()
+
+    # Получаем IP адрес для удобства
+    import socket
+
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+
+    print("🚀 DarovaChat запущен!")
+    print(f"📍 Локальный доступ: http://localhost:5000")
+    print(f"📍 Сетевой доступ: http://{local_ip}:5000")
+    print("📱 Друзья могут зайти по сетевому адресу")
+
+    # Запускаем сервер
+    app.run(
+        debug=True,
+        host='0.0.0.0',
+        port=5000,
+        threaded=True
+    )
