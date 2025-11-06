@@ -13,6 +13,9 @@ DATABASE = '/tmp/darova_chat.db'  # Или просто 'darova_chat.db'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 7
+app.config['SESSION_COOKIE_SAMESITE'] = "Lax"
+app.config['SESSION_COOKIE_SECURE'] = True  # Для HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 CORS(app)
 
 DATABASE = 'darova_chat.db'
@@ -684,3 +687,4 @@ if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     init_db()
     app.run(host='0.0.0.0', port=port, debug=False)
+
